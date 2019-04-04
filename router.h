@@ -35,7 +35,7 @@ class router
         // struct sockaddr_in clientAddr;
         int max_conn;
         std::vector<int> hostSockID;
-        std::vector<int> routerSockID;
+        std::map<int,int> routerSockID;
     
         router(int pNo, int maxcon);
         void setSocketAcceptConnections(bool);
@@ -43,9 +43,11 @@ class router
 
         void hostCommunication();
         void routerCommunication();
-        void joinConn(int pNo);
-        void listenConn();
+        void joinConn(int pNo,int);
+        void listenConn(int);
         void closeSockets();
+        void sendDataToRouter(int);
+        void recvDataFromRouter(int);
 
         //void manageHost(int , int );
 

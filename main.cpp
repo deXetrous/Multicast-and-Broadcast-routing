@@ -18,16 +18,25 @@ void acceptHost(router *first)
     //first.hostCommunication();
 }
 
-void connectClientRouter(router *second, int pNo)
+void connectClientRouter(router *second, int pNo, int i)
 {
-    second->joinConn(pNo);
+    second->joinConn(pNo, i);
     
 
 }
 
-void connectServerRouter(router *first)
+void connectServerRouter(router *first, int j)
 {
-    first->listenConn();
+    first->listenConn(j);
+}
+
+void sendPack(router *sender, int MapIndex)
+{
+    sender->sendDataToRouter(MapIndex);
+}
+void recPack(router *receiver, int MapIndex)
+{
+    receiver->recvDataFromRouter(MapIndex);
 }
 
 int main()
@@ -144,9 +153,9 @@ int main()
         {
             if(i<j && graphRouter[i][j] == 1)
             {
-                std::thread serverRouterTH(connectServerRouter, routerVector[i]);
+                std::thread serverRouterTH(connectServerRouter, routerVector[i], j);
                 int portToConnect = index-(noRouters-i)*jump;
-                std::thread clientRouterTH(connectClientRouter, routerVector[j], portToConnect);
+                std::thread clientRouterTH(connectClientRouter, routerVector[j], portToConnect, i);
 
                 serverRouterTH.join();
                 clientRouterTH.join();
@@ -156,13 +165,29 @@ int main()
     }
 
 
+    for(int i=0;i<noRouters;i++)
+    {
+        std::cout << "Printing for router :" << i << std::endl;
+        std::map<int, int>::iterator itr; 
+        for (itr = routerVector[i]->routerSockID.begin(); itr != routerVector[i]->routerSockID.end(); ++itr)
+        { 
+            std::cout << '\t' << itr->first 
+                << '\t' << itr->second << '\n'; 
+        } 
+    }
 
 
+    std::thread sendingTo(sendPack, routerVector[0], 1);
+    std::thread recevingFrom(recPack, routerVector[1], 0);
+    
+    sendingTo.join();
+    recevingFrom.join();
 
-
-
-
-
+    std::thread sendingTo1(sendPack, routerVector[1], 3);
+    std::thread recevingFrom1(recPack, routerVector[3], 1);
+    
+    sendingTo1.join();
+    recevingFrom1.join();
 
 
 }

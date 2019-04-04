@@ -27,11 +27,33 @@ void manageHost(int socketHostID, int hostID)
     }
 }
 
-void router::joinConn(int pNo)
+void router::sendDataToRouter(int index)
+{
+    // char rcvBuf[SIZE];
+    // if(recv(newsockid, rcvBuf, sizeof(rcvBuf), 0) < 0)
+    //         error("Received Failed");
+    // std::cout << "Message received " << rcvBuf << std::endl;
+    
+        char msg[] = "Sending mssg..Hello123\n";
+        send(routerSockID[index], msg, sizeof(msg), 0);
+        std::cout << "Message Sending " << msg << std::endl;
+
+}
+
+void router::recvDataFromRouter(int index)
+{
+    char rcvBuf[SIZE];
+    if(recv(routerSockID[index], rcvBuf, sizeof(rcvBuf), 0) < 0)
+            error("Received Failed");
+    std::cout << "Message received " << rcvBuf << std::endl;
+}
+
+void router::joinConn(int pNo, int i)
 {
     struct sockaddr_in addrport;
 
 	int newsockid = socket(PF_INET, SOCK_STREAM, 0);
+    routerSockID[i] = newsockid;
 	addrport.sin_family = AF_INET;
 	addrport.sin_port = htons(pNo);
 
@@ -50,14 +72,15 @@ void router::joinConn(int pNo)
 
 }
 
-void router::listenConn()
+
+void router::listenConn(int j)
 {
     // int status = listen(sockid, 1);
     struct sockaddr_in clientAddr;
     socklen_t clilen = sizeof(clientAddr);
-    routerSockID.push_back(accept(sockid, (struct sockaddr*)&clientAddr, &clilen));
+    routerSockID[j] = accept(sockid, (struct sockaddr*)&clientAddr, &clilen);
 
-    std::cout << "Successfully connected " << routerSockID[routerSockID.size()-1] <<std::endl;
+    std::cout << "Successfully connected " << routerSockID[j] <<std::endl;
     // char msg[] = "I received your connection..Reply me back";
     //     send(routerSockID, msg, sizeof(msg), 0);
     // std::cout << "hi " << routerSockID << std::endl;
