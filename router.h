@@ -1,5 +1,5 @@
-#ifndef host_H
-#define host_H
+#ifndef router_H
+#define router_H
 
 #include <iostream>
 #include <fstream>
@@ -25,22 +25,31 @@
 
 #define SIZE 1024
 
-class host
+class router
 {
-    private:
+    public:
         int portNo;
         int sockid;
-        int numChannels;
-        std::string memReport;
-        std::vector<int> channels;
-    public:
-        host(int pNo);
-
-       
-        void setSocket();
-
-        void routerCommunication();
+        int x;
+        // struct sockaddr_in addrport;
+        // struct sockaddr_in clientAddr;
+        int max_conn;
+        std::vector<int> hostSockID;
+        std::vector<int> routerSockID;
     
-};
+        router(int pNo, int maxcon);
+        void setSocketAcceptConnections(bool);
 
+
+        void hostCommunication();
+        void routerCommunication();
+        void joinConn(int pNo);
+        void listenConn();
+        void closeSockets();
+
+        //void manageHost(int , int );
+
+        
+
+};
 #endif

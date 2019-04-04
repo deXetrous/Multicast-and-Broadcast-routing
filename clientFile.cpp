@@ -30,10 +30,10 @@ int sharedAdr = 0;
 int app;
 void play()
 {
-    libvlc_instance_t *inst;
-    libvlc_media_player_t *mp;
-    libvlc_media_t *m;
-    inst = libvlc_new(0, NULL);
+    // libvlc_instance_t *inst;
+    // libvlc_media_player_t *mp;
+    // libvlc_media_t *m;
+    // inst = libvlc_new(0, NULL);
     int x = 0;
     while(true)
     {
