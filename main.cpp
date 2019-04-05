@@ -1,6 +1,7 @@
 #include "host.h"
 #include "router.h"
 
+
 void acceptRouter(host *one)
 {
 
@@ -30,15 +31,42 @@ void connectServerRouter(router *first, int j)
     first->listenConn(j);
 }
 
-void sendPack(router *sender, int MapIndex)
+void sendPack(router *sender, int MapIndex, char *sendBuffer,int sizeBuffer, int packNo)
 {
-    sender->sendDataToRouter(MapIndex);
+    sender->sendDataToRouter(MapIndex, sendBuffer, packNo, sizeBuffer);
 }
-void recPack(router *receiver, int MapIndex)
+void recPack(router *receiver, int MapIndex, int packNo, bool islastPacket)
 {
-    receiver->recvDataFromRouter(MapIndex);
+    receiver->recvDataFromRouter(MapIndex, packNo, islastPacket);
 }
 
+void sendingMulticastPackets(int noRouters, std::vector<std::vector<int>>spanningTree, std::vector<router*> routerVector, char *sendBuffer,int sizeBuffer, int packNo, bool islastPacket)
+{
+    std::queue<int> queueSender;
+    queueSender.push(0);
+    std::vector<int> vect(noRouters, 0);
+    vect[0] = 1;
+    while(!queueSender.empty())
+    {
+        int top = queueSender.front();
+        queueSender.pop();
+        // check the starting of i to avoid packet in a loop
+        for(int i=0;i<noRouters;i++)
+        {
+            if(top!=i && vect[i] ==0 && spanningTree[top][i] == 1)
+            {
+                vect[i] = 1;
+                queueSender.push(i);
+                //std::cout << "sending data from " << top << " to " << i << std::endl;
+                std::thread sendingTo(sendPack, routerVector[top], i, sendBuffer, sizeBuffer, packNo);
+                std::thread recevingFrom(recPack, routerVector[i], top, packNo, islastPacket);
+                sendingTo.join();
+                recevingFrom.join();
+            }
+        }
+    }
+}
+using namespace std;
 int main()
 {
     
@@ -95,6 +123,7 @@ int main()
         std::cin>>hosts;
         router* newRouter;
         newRouter = new router(index, hosts);
+        newRouter->routerID = i;
         routerVector.push_back(newRouter);
         
         std::thread routerTH(acceptHost, routerVector[routerVector.size()-1]);
@@ -177,17 +206,68 @@ int main()
     }
 
 
-    std::thread sendingTo(sendPack, routerVector[0], 1);
-    std::thread recevingFrom(recPack, routerVector[1], 0);
+    // std::thread sendingTo(sendPack, routerVector[0], 1);
+    // std::thread recevingFrom(recPack, routerVector[1], 0);
     
-    sendingTo.join();
-    recevingFrom.join();
+    // sendingTo.join();
+    // recevingFrom.join();
 
-    std::thread sendingTo1(sendPack, routerVector[1], 3);
-    std::thread recevingFrom1(recPack, routerVector[3], 1);
+    // std::thread sendingTo1(sendPack, routerVector[1], 3);
+    // std::thread recevingFrom1(recPack, routerVector[3], 1);
     
-    sendingTo1.join();
-    recevingFrom1.join();
+    // sendingTo1.join();
+    // recevingFrom1.join();
+
+
+
+
+    //creating our spanning tree
+
+    // int *spanningTree[noRouters];
+    // for(int i = 0; i < noRouters; i++)
+    //     spanningTree[i] = new int[noRouters];
+
+    std::vector<std::vector<int>> spanningTree;
+    
+
+    for(int i=0;i<noRouters;i++)
+    {
+        std::vector<int> temp;
+        for(int j=0;j<noRouters;j++)
+        {
+            int x;
+            std::cin >> x;
+            temp.push_back(x);  
+        }
+        spanningTree.push_back(temp);
+    }
+
+    std::ifstream fp;
+    fp.open("temp1.mp3", ios::binary|ios::in);
+    int packNo=0;
+    bool islastPacket = false;
+    while(fp.eof() == false)
+    {
+        char sendBuffer[SIZE];
+        fp.read(sendBuffer, SIZE);
+        // if(packNo == 0)
+        //     cout << "Sending :" << sendBuffer << endl;
+        if(fp.eof() == true)
+            islastPacket = true;
+        sendingMulticastPackets(noRouters, spanningTree, routerVector, sendBuffer,sizeof(sendBuffer), packNo, islastPacket);
+        // std::thread sendingTo(sendPack, routerVector[0], 1, sendBuffer, sizeof(sendBuffer),packNo);
+        // std::thread recevingFrom(recPack, routerVector[1], 0, packNo, islastPacket);
+        // sendingTo.join();
+        // recevingFrom.join();
+
+        packNo++;
+        //std::cout << packNo << " sending " << sizeof(sendBuffer) << std::endl;
+        
+    }
+
+    
+
+    sleep(5);
 
 
 }

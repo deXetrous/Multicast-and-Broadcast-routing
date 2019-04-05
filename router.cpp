@@ -27,25 +27,45 @@ void manageHost(int socketHostID, int hostID)
     }
 }
 
-void router::sendDataToRouter(int index)
+void router::sendDataToRouter(int index, char *sendBuffer, int packNo, int sizeBuffer)
 {
     // char rcvBuf[SIZE];
     // if(recv(newsockid, rcvBuf, sizeof(rcvBuf), 0) < 0)
     //         error("Received Failed");
     // std::cout << "Message received " << rcvBuf << std::endl;
     
-        char msg[] = "Sending mssg..Hello123\n";
-        send(routerSockID[index], msg, sizeof(msg), 0);
-        std::cout << "Message Sending " << msg << std::endl;
+    //char msg[] = "Sending mssg..Hello123\n";
+
+    // if(packNo == 0)
+    // std::cout << "SEnding reallY : " <<sizeof(sendBuffer) << " " << sizeBuffer<< " " << sendBuffer << std::endl;
+    send(routerSockID[index], sendBuffer, sizeBuffer, 0);
+    //std::cout << "Message Sending " << std::endl;
 
 }
-
-void router::recvDataFromRouter(int index)
+using namespace std;
+void router::recvDataFromRouter(int index, int packNo, bool islastPacket)
 {
     char rcvBuf[SIZE];
+    bzero(rcvBuf,SIZE);
     if(recv(routerSockID[index], rcvBuf, sizeof(rcvBuf), 0) < 0)
             error("Received Failed");
-    std::cout << "Message received " << rcvBuf << std::endl;
+    //std::cout << "Message received routerID " << routerID << " " << packNo << " " << sizeof(rcvBuf) << std::endl;
+    
+    if(packNo % 10 == 0)
+    {
+        std::string fileName = std::to_string(routerID) + "/";
+        fileName += std::to_string(packNo/10)+ "demo.mp3";  
+        fpToWrite.open(fileName, std::ios::binary | std::ios::out);
+        
+    }
+    for(int i=0;i<sizeof(rcvBuf);i++)
+        fpToWrite << rcvBuf[i];
+    if(packNo%10 == 9)
+    {
+        fpToWrite.close();
+    }
+    if(islastPacket)
+        fpToWrite.close();
 }
 
 void router::joinConn(int pNo, int i)

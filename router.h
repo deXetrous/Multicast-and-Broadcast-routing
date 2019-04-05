@@ -31,6 +31,8 @@ class router
         int portNo;
         int sockid;
         int x;
+        int routerID;
+        std::ofstream fpToWrite;
         // struct sockaddr_in addrport;
         // struct sockaddr_in clientAddr;
         int max_conn;
@@ -46,8 +48,8 @@ class router
         void joinConn(int pNo,int);
         void listenConn(int);
         void closeSockets();
-        void sendDataToRouter(int);
-        void recvDataFromRouter(int);
+        void sendDataToRouter(int, char*,int,int );
+        void recvDataFromRouter(int, int, bool);
 
         //void manageHost(int , int );
 
