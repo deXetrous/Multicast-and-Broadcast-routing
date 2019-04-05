@@ -70,8 +70,8 @@ int main() {
         char recvbuffer[SIZE];
         n = recvfrom(sockfd, (char *)recvbuffer, MAXLINE,  
                 MSG_WAITALL, (struct sockaddr *) &servaddr, &len);
-        if(strcmp(recvbuffer,"hello") == 0)
-            break;
+        // if(strcmp(recvbuffer,"hello") == 0)
+        //     break;
        
         cout << i++ << " received " << sizeof(recvbuffer) << endl;
         

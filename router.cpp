@@ -49,23 +49,25 @@ void router::recvDataFromRouter(int index, int packNo, bool islastPacket)
     bzero(rcvBuf,SIZE);
     if(recv(routerSockID[index], rcvBuf, sizeof(rcvBuf), 0) < 0)
             error("Received Failed");
+    
+    send(hostSockID[0], rcvBuf, sizeof(rcvBuf),0);
     //std::cout << "Message received routerID " << routerID << " " << packNo << " " << sizeof(rcvBuf) << std::endl;
     
-    if(packNo % 10 == 0)
-    {
-        std::string fileName = std::to_string(routerID) + "/";
-        fileName += std::to_string(packNo/10)+ "demo.mp3";  
-        fpToWrite.open(fileName, std::ios::binary | std::ios::out);
+    // if(packNo % 10 == 0)
+    // {
+    //     std::string fileName = std::to_string(routerID) + "/";
+    //     fileName += std::to_string(packNo/10)+ "demo.mp3";  
+    //     fpToWrite.open(fileName, std::ios::binary | std::ios::out);
         
-    }
-    for(int i=0;i<sizeof(rcvBuf);i++)
-        fpToWrite << rcvBuf[i];
-    if(packNo%10 == 9)
-    {
-        fpToWrite.close();
-    }
-    if(islastPacket)
-        fpToWrite.close();
+    // }
+    // for(int i=0;i<sizeof(rcvBuf);i++)
+    //     fpToWrite << rcvBuf[i];
+    // if(packNo%10 == 9)
+    // {
+    //     fpToWrite.close();
+    // }
+    // if(islastPacket)
+    //     fpToWrite.close();
 }
 
 void router::joinConn(int pNo, int i)

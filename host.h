@@ -27,16 +27,16 @@
 
 class host
 {
-    private:
+    public:
         int portNo;
         int sockid;
         int numChannels;
         std::string memReport;
         std::vector<int> channels;
-    public:
+        
         host(int pNo);
 
-       
+
         void setSocket();
 
         void routerCommunication();

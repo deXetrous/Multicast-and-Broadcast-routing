@@ -78,10 +78,11 @@ int main() {
         fp.read(sendbuffer, SIZE);
         cout << i++ << " sending " << sizeof(sendbuffer) << endl;
         sendto(sockfd, (const char *)sendbuffer, sizeof(sendbuffer), 0, (const struct sockaddr *) &cliaddr, sizeof(cliaddr));
+        usleep(10);
     }
     // sendto(sockfd, (const char *)hello, strlen(hello), 0, (const struct sockaddr *) &cliaddr, sizeof(cliaddr));
     // cout << "send hello " << strlen(hello) << endl;
-    while(1){}
+    // while(1){}
     close(sockfd);
     return 0; 
 } 

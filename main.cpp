@@ -1,14 +1,14 @@
-#include "host.h"
+// #include "host.h"
 #include "router.h"
 
 
-void acceptRouter(host *one)
-{
+// void acceptRouter(host *one)
+// {
 
-    one->setSocket();
-    //one.routerCommunication();
+//     one->setSocket();
+//     //one.routerCommunication();
 
-}
+// }
 
 void acceptHost(router *first)
 {
@@ -112,43 +112,48 @@ int main()
     int noRouters;
     std::cout << "Enter no of routers : " << std::endl;
     std::cin >> noRouters;
-    std::map<router*, std::vector<host*>> mapRouterToHost;
+    //std::map<router*, std::vector<host*>> mapRouterToHost;
     std::vector<router*> routerVector;
-    int index = 3000;
+    int index = 4000;
     int jump = 50;
+    thread routerTH[noRouters];
     for(int i=0;i<noRouters;i++)
     {
-        int hosts;
-        std::cout << "Enter no. of hosts : " << std::endl;
-        std::cin>>hosts;
+        // int hosts;
+        // std::cout << "Enter no. of hosts : " << std::endl;
+        // std::cin>>hosts;
+
         router* newRouter;
-        newRouter = new router(index, hosts);
+        newRouter = new router(index, 1);
         newRouter->routerID = i;
         routerVector.push_back(newRouter);
         
-        std::thread routerTH(acceptHost, routerVector[routerVector.size()-1]);
+        routerTH[i] = std::thread(acceptHost, routerVector[routerVector.size()-1]);
 
-        std::vector<host*> hostVector;
-        std::thread hostTH[hosts];
+        // std::vector<host*> hostVector;
+        // std::thread hostTH[hosts];
         
-        for(int j=0;j<hosts;j++)
-        {
-            sleep(1);
-            host *newHost;
-            newHost = new host(index);
-            hostVector.push_back(newHost);
+        // for(int j=0;j<hosts;j++)
+        // {
+        //     sleep(1);
+        //     host *newHost;
+        //     newHost = new host(index);
+        //     hostVector.push_back(newHost);
 
-            hostTH[j] = std::thread(acceptRouter, hostVector[hostVector.size()-1]);
-        }
-        routerTH.join();
-        for(int j=0;j<hosts;j++)
-            hostTH[j].join();
+        //     hostTH[j] = std::thread(acceptRouter, hostVector[hostVector.size()-1]);
+        // }
+        
+        // for(int j=0;j<hosts;j++)
+        //     hostTH[j].join();
 
-        mapRouterToHost[routerVector[routerVector.size()-1]] = hostVector;
+        // mapRouterToHost[routerVector[routerVector.size()-1]] = hostVector;
         index += jump;
-        std::cout << "Connected " << hosts << " host for router with pNO = " << index-jump << std::endl;
+        //std::cout << "Connected " << hosts << " host for router with pNO = " << index-jump << std::endl;
         
     }
+
+    for(int i=0;i<noRouters;i++)
+        routerTH[i].join();
 
     for(int i=0;i<noRouters;i++)
     {
