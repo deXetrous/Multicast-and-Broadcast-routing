@@ -47,35 +47,43 @@ void host::routerCommunication()
 }
 int app;
 int sharedIndex = 0;
-bool finish = false;
+int totalToPlay = INT_MAX;
+
 void play(int myID)
 {
 
-    int x = -1;
+    int x = 0;
     cout << "hi" <<endl;
-    while(!finish)
+    while(true)
     {
-        if(app>3)
+        if(app-1 > 5)
         {
-            x++;
-            cout << x << " " << app <<endl;
+            
+            cout << x << " " << app-1 << " " << totalToPlay <<endl;
 
             cout << "opening file " << x << endl;
             string fileName = "mpg123";
 
-            cout << app-1 << " " << x+15 <<endl;
-            int mini = min(app-1,x+15);
-            
-            for(int i=x;i<mini;i++)
+            cout << app-1 << " " << x+10 <<endl;
+            usleep(100);
+            int mini = min(app-1,x+10);
+            if(x >= totalToPlay)
+                break;
+            for(int i=x;i<=mini;i++)
             {
                 fileName += " "+to_string(myID)+"/"+to_string(i)+"demo.mp3";
 
             }
+            if(mini - x > 2)
+            {
+                system(fileName.c_str());
+                cout << "played from " << x << " to " << mini <<endl;
+                x=mini+1;
+            }
+
+            if(mini == totalToPlay)
+                break;
             
-            x=mini-1;
-            system(fileName.c_str());
-            
-            cout << "played till " << x <<endl;
         }
 
     }
@@ -101,25 +109,25 @@ int main()
     int x=0;
     char recvbuffer[SIZE];
     thread th[1];
-    if(myID == 1)
+    if(myID == 3)
         th[0] = thread(play,myID);
     //th[0].detach();
     
     app = 0;
+
     while(true)
     {
 
         bzero(recvbuffer,SIZE);
         int n = recv(H->sockid, recvbuffer, sizeof(recvbuffer), 0);
         
-        if(strcmp(recvbuffer,"hello") == 0)
-            break;
+
        
         //cout << x++ << " received " << sizeof(recvbuffer) << " " << n<< endl;
 
         if(n==0)
         {
-            finish = true;
+            totalToPlay = app-1;
             break;
         }
 
@@ -151,7 +159,7 @@ int main()
 
         sharedIndex++;
     }
-    if(myID == 1)
+    if(myID == 3)
         th[0].join();
     fp.close();
 
