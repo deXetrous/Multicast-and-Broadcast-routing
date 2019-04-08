@@ -9,6 +9,91 @@
 //     //one.routerCommunication();
 
 // }
+bool BFS(std::vector<std::vector<int>> v, int src, int dest, int x, 
+                            int pred[], int dist[]) 
+{ 
+    // a queue to maintain queue of vertices whose 
+    // adjacency list is to be scanned as per normal 
+    // DFS algorithm 
+    std::list<int> queue; 
+  
+    // boolean array visited[] which stores the 
+    // information whether ith vertex is reached 
+    // at least once in the Breadth first search 
+    bool visited[x]; 
+  
+    // initially all vertices are unvisited 
+    // so v[i] for all i is false 
+    // and as no path is yet constructed 
+    // dist[i] for all i set to infinity 
+    for (int i = 0; i < x; i++) { 
+        visited[i] = false; 
+        dist[i] = INT_MAX; 
+        pred[i] = -1; 
+    } 
+  
+    // now source is first to be visited and 
+    // distance from source to itself should be 0 
+    visited[src] = true; 
+    dist[src] = 0; 
+    queue.push_back(src); 
+  
+    // standard BFS algorithm 
+    while (!queue.empty()) { 
+        int u = queue.front(); 
+        queue.pop_front(); 
+        for (int i = 0; i < x; i++) {
+        	if(i==u)continue;                     // same row and column no. WE dont have self loop
+        	if(v[u][i] ==0)continue;          // not A NEIGHBOUR 
+            if (visited[i] == false) { 
+                visited[i] = true; 
+                dist[i] = dist[u] + 1; 
+                pred[i] = u; 
+                queue.push_back(i); 
+  
+                // We stop BFS when we find 
+                // destination. 
+                if (i == dest) 
+                   return true; 
+            } 
+        } 
+    } 
+  
+    return false; 
+}
+
+std::vector<int> printShortestDistance(std::vector<std::vector<int>> v, int s, int dest, int x) 
+{ 
+    // predecessor[i] array stores predecessor of 
+    // i and distance array stores distance of i 
+    // from s 
+    int pred[x], dist[x]; 
+    
+    std::vector<int> path;
+    if (BFS(v, s, dest, x, pred, dist) == false) 
+    { 
+        return path; 
+    } 
+    
+    int crawl = dest; 
+    path.push_back(crawl); 
+    while (pred[crawl] != -1) { 
+        path.push_back(pred[crawl]); 
+        crawl = pred[crawl]; 
+    } 
+
+    return path;
+}
+
+std::map<int,std::vector<int>> findUnicastPath(int noRouters, int centre, std::vector<std::vector<int>> graphRouter)
+{
+    std::map<int,std::vector<int>> path;
+    for (int i = 0; i < noRouters; ++i)
+	{
+		path[i] = printShortestDistance(graphRouter,i,centre,noRouters);
+	}
+    return path;
+}
 
 void acceptHost(router *first)
 {
@@ -74,6 +159,30 @@ void hostIGMPfunc(router *first, bool *finishProgram)
 {
     first->hostIGMPCommunication(finishProgram);
 }
+
+std::mutex mtx;
+void createBranch(int index, int centre, std::vector<int> path, std::vector<std::vector<int>> &spanningTree)
+{
+    int prev = index;
+    for(int i=path.size()-2;i>=0;i--)
+    {
+        mtx.lock();
+        if((spanningTree[path[i]][prev]) == 1)
+        {
+            mtx.unlock();
+            break;
+        }
+        else
+        {
+            spanningTree[path[i]][prev] = 1;
+            spanningTree[prev][path[i]] = 1;
+        }
+        mtx.unlock();
+        prev = path[i];
+    }
+}
+
+
 using namespace std;
 int main()
 {
@@ -186,14 +295,17 @@ int main()
 
 
     std::cout << "Enter router topology : \n";
-    int graphRouter[noRouters][noRouters];
+    std::vector<std::vector<int>> graphRouter;
     for(int i=0;i<noRouters;i++)
     {
+        std::vector<int> temp;
         for(int j=0;j<noRouters;j++)
         {
-            std::cin >> graphRouter[i][j];
-            
+            int x;
+            std::cin >> x;
+            temp.push_back(x);  
         }
+        graphRouter.push_back(temp);
     }
 
     for(int i=0;i<noRouters;i++)
@@ -241,29 +353,58 @@ int main()
 
 
 
-    //creating our spanning tree
-
-    // int *spanningTree[noRouters];
-    // for(int i = 0; i < noRouters; i++)
-    //     spanningTree[i] = new int[noRouters];
+    
 
     
 
-    std::vector<std::vector<int>> spanningTree;
+    map<int,vector<int>> unicastPath;
 
 
-    std::cout << "Enter spanning Tree : " << std::endl;
+    int centre = 0;
+    //path is stored in reverse fashion i.e. from centre node to host node
+    unicastPath = findUnicastPath(noRouters, centre, graphRouter);
 
+    map<int, vector<int>>::iterator itr; 
+    for(itr = unicastPath.begin();itr!= unicastPath.end();itr++)
+    {
+        cout << itr->first << endl;
+        for(int i = 0; i<itr->second.size();i++)
+            cout << itr->second[i] << " -- ";
+        cout << endl;
+
+    }
+
+    //creating our spanning tree using centre based approach
+
+    vector<vector<int>> spanningTree;
     for(int i=0;i<noRouters;i++)
     {
-        std::vector<int> temp;
+        vector<int> temp;
         for(int j=0;j<noRouters;j++)
-        {
-            int x;
-            std::cin >> x;
-            temp.push_back(x);  
-        }
+            temp.push_back(0);  
         spanningTree.push_back(temp);
+    }
+    
+    
+    thread spanningTreeTH[noRouters];
+    for(int i=0;i<noRouters;i++)
+    {
+        if(i != centre)
+            spanningTreeTH[i] = thread(createBranch, i, centre, unicastPath[i], ref(spanningTree));
+    }
+    
+    for(int i=0;i<noRouters;i++)
+    {
+         if(i != centre)
+            spanningTreeTH[i].join();
+    }
+
+    cout << "Printing the spanning Tree generated : " << endl;
+    for(int i = 0; i < noRouters; i++)
+    {
+        for(int j = 0; j < noRouters; j++)
+            cout << spanningTree[i][j] << "  ";
+        cout << endl;
     }
 
     bool finishProgram = false;
