@@ -69,6 +69,11 @@ void sendingMulticastPackets(int noRouters, std::vector<std::vector<int>>spannin
         }
     }
 }
+
+void hostIGMPfunc(router *first, bool *finishProgram)
+{
+    first->hostIGMPCommunication(finishProgram);
+}
 using namespace std;
 int main()
 {
@@ -242,8 +247,12 @@ int main()
     // for(int i = 0; i < noRouters; i++)
     //     spanningTree[i] = new int[noRouters];
 
-    std::vector<std::vector<int>> spanningTree;
     
+
+    std::vector<std::vector<int>> spanningTree;
+
+
+    std::cout << "Enter spanning Tree : " << std::endl;
 
     for(int i=0;i<noRouters;i++)
     {
@@ -256,6 +265,15 @@ int main()
         }
         spanningTree.push_back(temp);
     }
+
+    bool finishProgram = false;
+    thread IGMP_thread[noRouters];
+    for(int i=0;i<noRouters;i++)
+    {
+        std::cout << "Calling for router " << routerVector[i]->routerID << std::endl;
+        IGMP_thread[i] = std::thread(hostIGMPfunc, routerVector[i], &finishProgram);
+    }
+    sleep(1);
     
     std::ifstream fp;
     fp.open("temp1.mp3", ios::binary|ios::in);
@@ -290,9 +308,7 @@ int main()
         
     }
 
-    
-
-
-
-
+    finishProgram = true;
+    for(int i=0;i<noRouters;i++)
+        IGMP_thread[i].join();
 }

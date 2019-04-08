@@ -33,7 +33,7 @@ class host
         int sockid;
         int sockidIGMP;
         int numChannels;
-        std::string memReport;
+        
         std::vector<int> channels;
         
         host(int pNo);
@@ -41,8 +41,6 @@ class host
 
         void setSocket();
         void setSocketIGMP();
-
-        void routerCommunication();
     
 };
 

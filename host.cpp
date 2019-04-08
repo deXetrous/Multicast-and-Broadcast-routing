@@ -46,19 +46,19 @@ void host::setSocketIGMP()
     cout << "successfully connected to router For IGMP communication" << endl;
 }
 
-void host::routerCommunication()
+void routerCommunication(int sockIGMP)
 {
     while(true)
     {
         char recvbuffer[SIZE];
-        int n = recv(sockid, recvbuffer, sizeof(recvbuffer), 0);
+        int n = recv(sockIGMP, recvbuffer, sizeof(recvbuffer), 0);
         
         if(strcmp(recvbuffer,"memQuery") == 0)
         {
-            memReport = "1 2 3";
+            string memReport = "1 2 3";
             char msg[5];
             strcpy(msg,memReport.c_str());
-            send(sockid, msg, sizeof(msg), 0);
+            send(sockIGMP, msg, sizeof(msg), 0);
             cout << "Report send : " << memReport << endl;
         }
     }
@@ -123,6 +123,9 @@ int main()
     H->setSocket();
     H->setSocketIGMP();
 
+    thread igmpTH(routerCommunication, H->sockidIGMP);
+    igmpTH.detach();
+    
     fstream fp;
     // fp.open("song.mp3", ios::binary | ios::out);
     int x=0;

@@ -13,19 +13,29 @@ void error(const char* msg)
 	exit(1);
 }
 
-void manageHost(int socketHostID, int hostID)
+void manageHost(int socketHostID, int routerid, bool *finishProgram)
 {
-    while(true)
+    while(*finishProgram == false)
     {
         char msg[] = "memQuery";
         send(socketHostID, msg, sizeof(msg), 0);
-        std::cout << "Membership Query mssg sent to host : " << hostID << std::endl;
+        std::cout << "Membership Query mssg sent by router : " << routerid << std::endl;
         char rcvBuf[SIZE];
         if(recv(socketHostID, rcvBuf, sizeof(rcvBuf), 0) < 0)
             error("Receive Failed");
-        std::cout << "Membership Query Report recv from host : " << hostID << " " << rcvBuf << std::endl;
+        std::cout << "Membership Query Report recv by router : " << routerid << " " << rcvBuf << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     }
+}
+
+void router::hostIGMPCommunication(bool *finishProgram)
+{
+    std::thread thForHost[max_conn];
+    for(int i=0;i<max_conn;i++)
+        thForHost[i] = std::thread(manageHost, hostSockIDIGMP[i], routerID, finishProgram);
+
+    for(int i=0;i<max_conn;i++)
+        thForHost[i].join();
 }
 
 void router::sendDataToRouter(int index, char *sendBuffer, int packNo, int sizeBuffer)
@@ -171,16 +181,5 @@ void router::setSocketAcceptConnectionsIGMP()
 
 }
 
-void router::hostCommunication()
-{
-    std::cout << "i am in " << std::endl;
-    std::cout << max_conn << " " << std::endl;
-    std::cout << hostSockID[0] << std::endl;
-    std::thread thForHost[max_conn];
-    for(int i=0;i<max_conn;i++)
-        thForHost[i] = std::thread(manageHost, hostSockID[i], i+1);
 
-    for(int i=0;i<max_conn;i++)
-        thForHost[i].join();
-}
 

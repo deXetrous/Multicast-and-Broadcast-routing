@@ -46,7 +46,7 @@ class router
         void setSocketAcceptConnections();
         void setSocketAcceptConnectionsIGMP();
 
-        void hostCommunication();
+        void hostIGMPCommunication(bool *);
         void routerCommunication();
         void joinConn(int pNo,int);
         void listenConn(int);
