@@ -29,7 +29,9 @@ class host
 {
     public:
         int portNo;
+        int portNoIGMP;
         int sockid;
+        int sockidIGMP;
         int numChannels;
         std::string memReport;
         std::vector<int> channels;
@@ -38,6 +40,7 @@ class host
 
 
         void setSocket();
+        void setSocketIGMP();
 
         void routerCommunication();
     

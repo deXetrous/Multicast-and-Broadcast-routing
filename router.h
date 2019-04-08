@@ -29,7 +29,9 @@ class router
 {
     public:
         int portNo;
+        int portNoIGMP;
         int sockid;
+        int sockidIGMP;
         int x;
         int routerID;
         std::ofstream fpToWrite;
@@ -37,11 +39,12 @@ class router
         // struct sockaddr_in clientAddr;
         int max_conn;
         std::vector<int> hostSockID;
+        std::vector<int> hostSockIDIGMP;
         std::map<int,int> routerSockID;
     
         router(int pNo, int maxcon);
-        void setSocketAcceptConnections(bool);
-
+        void setSocketAcceptConnections();
+        void setSocketAcceptConnectionsIGMP();
 
         void hostCommunication();
         void routerCommunication();

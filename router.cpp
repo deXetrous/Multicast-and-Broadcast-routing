@@ -3,6 +3,7 @@
 router::router(int pNo, int maxcon)
 {
     portNo = pNo;
+    portNoIGMP = portNo+1;
     max_conn = maxcon;
 }
 
@@ -113,7 +114,7 @@ void router::listenConn(int j)
 
 }
 
-void router::setSocketAcceptConnections(bool to)
+void router::setSocketAcceptConnections()
 {
     struct sockaddr_in addrport, clientAddr;
 	sockid = socket(PF_INET, SOCK_STREAM, 0);
@@ -138,6 +139,33 @@ void router::setSocketAcceptConnections(bool to)
     }
     x = 10;
     std::cout << "Accepted all the hosts " << hostSockID[0] << std::endl;
+}
+
+void router::setSocketAcceptConnectionsIGMP()
+{
+    struct sockaddr_in addrport, clientAddr;
+	sockidIGMP = socket(PF_INET, SOCK_STREAM, 0);
+    int t = 1;
+    setsockopt(sockidIGMP,SOL_SOCKET,SO_REUSEADDR,&t,sizeof(int));
+
+	addrport.sin_family = AF_INET;
+	addrport.sin_port = htons(portNoIGMP);
+    addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
+	//addrport.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(bind(sockidIGMP, (struct sockaddr *) &addrport, sizeof(addrport)) < 0)
+        error("Binding failed");
+    
+    int status = listen(sockidIGMP, max_conn+1);
+    socklen_t clilen = sizeof(clientAddr);
+    for(int i=0;i<max_conn;i++)
+    {
+        hostSockIDIGMP.push_back(accept(sockidIGMP, (struct sockaddr*)&clientAddr, &clilen));
+        if(hostSockIDIGMP[i] < 0)
+			error("Error on accept");
+        std::cout << "successfully connected to host " << std::endl;
+    }
+    x = 10;
+    std::cout << "Accepted all the hosts for IGMP communication"  << std::endl;
     
 
 

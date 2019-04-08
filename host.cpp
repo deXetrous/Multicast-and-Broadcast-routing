@@ -3,6 +3,7 @@ using namespace std;
 host::host(int pNo)
 {
     portNo = pNo;
+    portNoIGMP = portNo+1;
 }
 
 void error1(const char* msg)
@@ -26,6 +27,23 @@ void host::setSocket()
 	if(connect(sockid, (struct sockaddr*)&addrport, sizeof(addrport)) < 0 )
         error1("error in connect");
     cout << "successfully connected to router " << endl;
+}
+
+void host::setSocketIGMP()
+{
+    struct sockaddr_in addrport, clientAddr;
+
+	struct hostent * server;
+	//server = gethostbyname(argv[1]);
+	sockidIGMP = socket(PF_INET, SOCK_STREAM, 0);
+	addrport.sin_family = AF_INET;
+	addrport.sin_port = htons(portNoIGMP);
+
+	addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
+	
+	if(connect(sockidIGMP, (struct sockaddr*)&addrport, sizeof(addrport)) < 0 )
+        error1("error in connect");
+    cout << "successfully connected to router For IGMP communication" << endl;
 }
 
 void host::routerCommunication()
@@ -103,6 +121,7 @@ int main()
     H = new host(pNo);
 
     H->setSocket();
+    H->setSocketIGMP();
 
     fstream fp;
     // fp.open("song.mp3", ios::binary | ios::out);
@@ -121,7 +140,6 @@ int main()
         bzero(recvbuffer,SIZE);
         int n = recv(H->sockid, recvbuffer, sizeof(recvbuffer), 0);
         
-
        
         //cout << x++ << " received " << sizeof(recvbuffer) << " " << n<< endl;
 

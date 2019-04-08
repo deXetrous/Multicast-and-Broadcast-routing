@@ -13,10 +13,13 @@
 void acceptHost(router *first)
 {
 
-    first->setSocketAcceptConnections(false);
-        
-    
+    first->setSocketAcceptConnections();
     //first.hostCommunication();
+}
+
+void acceptHostIGMP(router * first)
+{
+    first->setSocketAcceptConnectionsIGMP();
 }
 
 void connectClientRouter(router *second, int pNo, int i)
@@ -117,6 +120,7 @@ int main()
     int index = 4000;
     int jump = 50;
     thread routerTH[noRouters];
+    thread routerTHIGMP[noRouters];
     for(int i=0;i<noRouters;i++)
     {
         // int hosts;
@@ -129,6 +133,7 @@ int main()
         routerVector.push_back(newRouter);
         
         routerTH[i] = std::thread(acceptHost, routerVector[routerVector.size()-1]);
+        routerTHIGMP[i] = std::thread(acceptHostIGMP, routerVector[i]);
 
         // std::vector<host*> hostVector;
         // std::thread hostTH[hosts];
@@ -154,6 +159,11 @@ int main()
 
     for(int i=0;i<noRouters;i++)
         routerTH[i].join();
+
+
+    
+    for(int i=0;i<noRouters;i++)
+        routerTHIGMP[i].join();
 
     for(int i=0;i<noRouters;i++)
     {
