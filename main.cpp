@@ -201,7 +201,6 @@ void generateFutureSpanningTree(std::vector<std::vector<int>> &spanningTree, int
         vector<thread>spanningTreeTH;
         for(int i=0;i<noRouters;i++)
         {
-            cout << i << " $$$ " << routerVector[i]->toBeShown << endl;
             if(i != centre && routerVector[i]->toBeShown == true)
             {
                 thread th =  thread(createBranch, i, centre, unicastPath[i], ref(newSpanningTree));
@@ -212,15 +211,6 @@ void generateFutureSpanningTree(std::vector<std::vector<int>> &spanningTree, int
         for(int i=0;i<spanningTreeTH.size();i++)
         {
             spanningTreeTH[i].join();
-        }
-
-
-        cout << "Printing the new spanning Tree generated : " << endl;
-        for(int i = 0; i < noRouters; i++)
-        {
-            for(int j = 0; j < noRouters; j++)
-                cout << newSpanningTree[i][j] << "  ";
-            cout << endl;
         }
 
         spanningTree = newSpanningTree;

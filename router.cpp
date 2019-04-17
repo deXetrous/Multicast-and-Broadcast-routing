@@ -14,23 +14,25 @@ void error(const char* msg)
 	exit(1);
 }
 
-void manageHost(int routerID, int* toBeShown, int socketHostID, int routerid, bool *finishProgram)
+void manageHost(int routerID, int* toBeShown, int socketHostID,  bool *finishProgram)
 {
+    
     while(*finishProgram == false)
     {
         char msg[] = "memQuery";
         send(socketHostID, msg, sizeof(msg), 0);
-        std::cout << "Membership Query mssg sent by router : " << routerid << std::endl;
+        std::cout << "Membership Query mssg sent by router : " << routerID << std::endl;
         char rcvBuf[SIZE];
         if(recv(socketHostID, rcvBuf, sizeof(rcvBuf), 0) < 0)
             error("Receive Failed");
-        std::cout << "Membership Query Report recv by router : " << routerid << " " << rcvBuf << std::endl;
+        std::cout << "Membership Query Report recv by router : " << routerID << " " << rcvBuf << std::endl;
         std::string s(rcvBuf);
-        std::cout << routerID << " ---- " << rcvBuf << std::endl;
+
         if(s.find("1") == std::string::npos)
             *toBeShown = false;
-        if(routerID == 6)
-            std::cout << s << " @@@@ " << *toBeShown <<std::endl;
+        else
+            *toBeShown = true;
+        
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     }
 }
@@ -39,7 +41,7 @@ void router::hostIGMPCommunication(bool *finishProgram)
 {
     std::thread thForHost[max_conn];
     for(int i=0;i<max_conn;i++)
-        thForHost[i] = std::thread(manageHost, routerID, &toBeShown, hostSockIDIGMP[i], routerID, finishProgram);
+        thForHost[i] = std::thread(manageHost, routerID, &toBeShown, hostSockIDIGMP[i], finishProgram);
 
     for(int i=0;i<max_conn;i++)
         thForHost[i].join();
@@ -68,7 +70,8 @@ void router::recvDataFromRouter(int index, int packNo, bool islastPacket)
     if(recv(routerSockID[index], rcvBuf, sizeof(rcvBuf), 0) < 0)
             error("Received Failed");
     
-    send(hostSockID[0], rcvBuf, sizeof(rcvBuf),0);
+    if(toBeShown == true)
+        send(hostSockID[0], rcvBuf, sizeof(rcvBuf),0);
     //std::cout << "Message received routerID " << routerID << " " << packNo << " " << sizeof(rcvBuf) << std::endl;
     
     // if(packNo % 10 == 0)

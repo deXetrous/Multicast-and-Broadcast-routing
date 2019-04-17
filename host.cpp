@@ -48,23 +48,32 @@ void host::setSocketIGMP()
 
 void routerCommunication(int sockIGMP, int myID)
 {
+    string openFileName = "MemReport/"+to_string(myID)+".txt";
+    ifstream infile(openFileName);
+    string line,oldline;
+
     while(true)
     {
+        // if the file is finished reading, the last line will be send as memReport
+        if(getline(infile,line))
+            oldline = line;
+        else
+            line = oldline;
+        
         char recvbuffer[SIZE];
         int n = recv(sockIGMP, recvbuffer, sizeof(recvbuffer), 0);
         
         if(strcmp(recvbuffer,"memQuery") == 0)
         {
-            string memReport;
-            if(myID == 6)
-                memReport = "4 2 3";
-            else
-                memReport = "1 2 3";
+            // if(myID == 3)
+            //     memReport = "4 2 3";
+            // else
+            //     memReport = "1 2 3";
             
             char msg[5];
-            strcpy(msg,memReport.c_str());
+            strcpy(msg,line.c_str());
             send(sockIGMP, msg, sizeof(msg), 0);
-            cout << "Report send : " << memReport << endl;
+            cout << "Report send : " << line << endl;
         }
     }
 }
