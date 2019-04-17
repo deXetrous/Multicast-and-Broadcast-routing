@@ -5,6 +5,7 @@ router::router(int pNo, int maxcon)
     portNo = pNo;
     portNoIGMP = portNo+1;
     max_conn = maxcon;
+    toBeShown = true;
 }
 
 void error(const char* msg)
@@ -13,7 +14,7 @@ void error(const char* msg)
 	exit(1);
 }
 
-void manageHost(int socketHostID, int routerid, bool *finishProgram)
+void manageHost(int routerID, int* toBeShown, int socketHostID, int routerid, bool *finishProgram)
 {
     while(*finishProgram == false)
     {
@@ -24,6 +25,12 @@ void manageHost(int socketHostID, int routerid, bool *finishProgram)
         if(recv(socketHostID, rcvBuf, sizeof(rcvBuf), 0) < 0)
             error("Receive Failed");
         std::cout << "Membership Query Report recv by router : " << routerid << " " << rcvBuf << std::endl;
+        std::string s(rcvBuf);
+        std::cout << routerID << " ---- " << rcvBuf << std::endl;
+        if(s.find("1") == std::string::npos)
+            *toBeShown = false;
+        if(routerID == 6)
+            std::cout << s << " @@@@ " << *toBeShown <<std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     }
 }
@@ -32,7 +39,7 @@ void router::hostIGMPCommunication(bool *finishProgram)
 {
     std::thread thForHost[max_conn];
     for(int i=0;i<max_conn;i++)
-        thForHost[i] = std::thread(manageHost, hostSockIDIGMP[i], routerID, finishProgram);
+        thForHost[i] = std::thread(manageHost, routerID, &toBeShown, hostSockIDIGMP[i], routerID, finishProgram);
 
     for(int i=0;i<max_conn;i++)
         thForHost[i].join();
@@ -100,8 +107,6 @@ void router::joinConn(int pNo, int i)
     // std::cout << "Message received " << rcvBuf << std::endl;
     // char msg[] = "Replying back..fuck off\n";
     //     send(newsockid, msg, sizeof(msg), 0);
-
-
 
 }
 

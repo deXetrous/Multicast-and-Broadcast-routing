@@ -46,7 +46,7 @@ void host::setSocketIGMP()
     cout << "successfully connected to router For IGMP communication" << endl;
 }
 
-void routerCommunication(int sockIGMP)
+void routerCommunication(int sockIGMP, int myID)
 {
     while(true)
     {
@@ -55,7 +55,12 @@ void routerCommunication(int sockIGMP)
         
         if(strcmp(recvbuffer,"memQuery") == 0)
         {
-            string memReport = "1 2 3";
+            string memReport;
+            if(myID == 6)
+                memReport = "4 2 3";
+            else
+                memReport = "1 2 3";
+            
             char msg[5];
             strcpy(msg,memReport.c_str());
             send(sockIGMP, msg, sizeof(msg), 0);
@@ -123,7 +128,7 @@ int main()
     H->setSocket();
     H->setSocketIGMP();
 
-    thread igmpTH(routerCommunication, H->sockidIGMP);
+    thread igmpTH(routerCommunication, H->sockidIGMP, myID);
     igmpTH.detach();
     
     fstream fp;

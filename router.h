@@ -35,6 +35,7 @@ class router
         int x;
         int routerID;
         std::ofstream fpToWrite;
+        int toBeShown;
         // struct sockaddr_in addrport;
         // struct sockaddr_in clientAddr;
         int max_conn;
