@@ -1,0 +1,676 @@
+qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. qdisc is short for 'queueing discipline' and it is elementary to understanding traffic control. Whenever the kernel needs to send a packet to an interface, it is enqueued to the qdisc configured for that interface. Immediately afterwards, the kernel tries to get as many packets as possible from the qdisc, for giving them to the network adaptor driver.
+
+A simple QDISC is the 'pfifo' one, which does no processing at all and is a pure First In, First Out queue. It does however store traffic when the network interface can't handle it momentarily.
+Classes
+
+Some qdiscs can contain classes, which contain further qdiscs - traffic may then be enqueued in any of the inner qdiscs, which are within the classes. When the kernel tries to dequeue a packet from such a classful qdisc it can come from any of the classes. A qdisc may for example prioritize certain kinds of traffic by trying to dequeue from certain classes before others.
+Filters
+
+A filter is used by a classful qdisc to determine in which class a packet will be enqueued. Whenever traffic arrives at a class with subclasses, it needs to be classified. Various methods may be employed to do so, one of these are the filters. All filters attached to the class are called, until one of them returns with a verdict. If no verdict was made, other criteria may be available. This differs per qdisc.
+
+It is important to notice that filters reside within qdiscs - they are not masters of what happens.
+Classless Qdiscs
+
+The classless qdiscs are:
+
+[p|b]fifo
+    Simplest usable qdisc, pure First In, First Out behaviour. Limited in packets or in bytes. 
+pfifo_fast
+    Standard qdisc for 'Advanced Router' enabled kernels. Consists of a three-band queue which honors Type of Service flags, as well as the priority that may be assigned to a packet. 
+red
+
+Random Early Detection simulates physical congestion by randomly dropping packets when nearing configured bandwidth allocation. Well suited to very large bandwidth applications.
+
+sfq
+
+Stochastic Fairness Queueing reorders queued traffic so each 'session' gets to send a packet in turn.
+
+tbf
+
+The Token Bucket Filter is suited for slowing traffic down to a precisely configured rate. Scales well to large bandwidths.
+
+Configuring Classless Qdiscs
+
+In the absence of classful qdiscs, classless qdiscs can only be attached at the root of a device. Full syntax:
+
+tc qdisc add dev DEV root QDISC QDISC-PARAMETERS
+
+To remove, issue
+
+tc qdisc del dev DEV root
+
+The pfifo_fast qdisc is the automatic default in the absence of a configured qdisc.
+Classful Qdiscs
+
+The classful qdiscs are:
+
+CBQ
+
+Class Based Queueing implements a rich linksharing hierarchy of classes. It contains shaping elements as well as prioritizing capabilities. Shaping is performed using link idle time calculations based on average packet size and underlying link bandwidth. The latter may be ill-defined for some interfaces.
+
+HTB
+
+The Hierarchy Token Bucket implements a rich linksharing hierarchy of classes with an emphasis on conforming to existing practices. HTB facilitates guaranteeing bandwidth to classes, while also allowing specification of upper limits to inter-class sharing. It contains shaping elements, based on TBF and can prioritize classes.
+PRIO
+
+The PRIO qdisc is a non-shaping container for a configurable number of classes which are dequeued in order. This allows for easy prioritization of traffic, where lower classes are only able to send if higher ones have no packets available. To facilitate configuration, Type Of Service bits are honored by default.
+
+Theory Of Operation
+
+Classes form a tree, where each class has a single parent. A class may have multiple children. Some qdiscs allow for runtime addition of classes (CBQ, HTB) while others (PRIO) are created with a static number of children.
+
+Qdiscs which allow dynamic addition of classes can have zero or more subclasses to which traffic may be enqueued.
+
+Furthermore, each class contains a leaf qdisc which by default has pfifo behaviour though another qdisc can be attached in place. This qdisc may again contain classes, but each class can have only one leaf qdisc.
+
+When a packet enters a classful qdisc it can be classified to one of the classes within. Three criteria are available, although not all qdiscs will use all three:
+
+tc filters
+    If tc filters are attached to a class, they are consulted first for relevant instructions. Filters can match on all fields of a packet header, as well as on the firewall mark applied by ipchains or iptables. 
+Type of Service
+    Some qdiscs have built in rules for classifying packets based on the TOS field. 
+skb->priority
+    Userspace programs can encode a class-id in the 'skb->priority' field using the SO_PRIORITY option. 
+Each node within the tree can have its own filters but higher level filters may also point directly to lower classes.
+
+If classification did not succeed, packets are enqueued to the leaf qdisc attached to that class. Check qdisc specific manpages for details, however. 

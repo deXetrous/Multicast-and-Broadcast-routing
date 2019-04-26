@@ -1,6 +1,6 @@
  
 #include "router.h"
-
+#include <atomic>
 
 // void acceptRouter(host *one)
 // {
@@ -9,6 +9,7 @@
 //     //one.routerCommunication();
 
 // }
+std::atomic<int> finisher(0);
 bool BFS(std::vector<std::vector<int>> v, int src, int dest, int x, 
                             int pred[], int dist[]) 
 { 
@@ -128,12 +129,12 @@ void recPack(router *receiver, int MapIndex, int packNo, bool islastPacket)
     receiver->recvDataFromRouter(MapIndex, packNo, islastPacket);
 }
 
-void sendingMulticastPackets(int noRouters, std::vector<std::vector<int>>spanningTree, std::vector<router*> routerVector, char *sendBuffer,int sizeBuffer, int packNo, bool islastPacket)
+void sendingMulticastPackets(int centre, int noRouters, std::vector<std::vector<int>>spanningTree, std::vector<router*> routerVector, char *sendBuffer,int sizeBuffer, int packNo, bool islastPacket)
 {
     std::queue<int> queueSender;
-    queueSender.push(0);
+    queueSender.push(centre);
     std::vector<int> vect(noRouters, 0);
-    vect[0] = 1;
+    vect[centre] = 1;
     while(!queueSender.empty())
     {
         int top = queueSender.front();
@@ -145,7 +146,7 @@ void sendingMulticastPackets(int noRouters, std::vector<std::vector<int>>spannin
             {
                 vect[i] = 1;
                 queueSender.push(i);
-                //std::cout << "sending data from " << top << " to " << i << " packet no = " << packNo << std::endl;
+                std::cout << "sending data from " << top << " to " << i << " packet no = " << packNo << "centre = " << centre << std::endl;
                 std::thread sendingTo(sendPack, routerVector[top], i, sendBuffer, sizeBuffer, packNo);
                 std::thread recevingFrom(recPack, routerVector[i], top, packNo, islastPacket);
                 sendingTo.join();
@@ -201,10 +202,21 @@ void generateFutureSpanningTree(std::vector<std::vector<int>> &spanningTree, int
         vector<thread>spanningTreeTH;
         for(int i=0;i<noRouters;i++)
         {
-            if(i != centre && routerVector[i]->toBeShown == true)
+            if(centre == 0)
             {
-                thread th =  thread(createBranch, i, centre, unicastPath[i], ref(newSpanningTree));
-                spanningTreeTH.push_back(move(th));
+                if(i != centre && routerVector[i]->toBeShown0 == true)
+                {
+                    thread th =  thread(createBranch, i, centre, unicastPath[i], ref(newSpanningTree));
+                    spanningTreeTH.push_back(move(th));
+                }
+            }
+            else if(centre == 6)
+            {
+                if(i != centre && routerVector[i]->toBeShown6 == true)
+                {
+                    thread th =  thread(createBranch, i, centre, unicastPath[i], ref(newSpanningTree));
+                    spanningTreeTH.push_back(move(th));
+                }
             }
         }
         
@@ -219,7 +231,7 @@ void generateFutureSpanningTree(std::vector<std::vector<int>> &spanningTree, int
 }
 
 
-
+void manageGroup(int, int, std::vector<std::vector<int>>,std::vector<router*> , string);
 int main()
 {
     int noRouters;
@@ -305,14 +317,43 @@ int main()
         } 
     }
 
-
+    
+    std::thread manageGroupThread1(manageGroup, noRouters, 0, graphRouter, routerVector,"temp1.mp3");
+    std::thread manageGroupThread2(manageGroup, noRouters, 6, graphRouter, routerVector,"temp2.mp3");
+    
+    cout << "hi1" << endl;
+    bool finishProgram = false;
+    thread IGMP_thread[noRouters];
+    for(int i=0;i<noRouters;i++)
+    {
+        std::cout << "Calling for router " << routerVector[i]->routerID << std::endl;
+        IGMP_thread[i] = std::thread(hostIGMPfunc, routerVector[i], &finishProgram);
+        //IGMP_thread[i].detach();
+    }
+    cout << "hi2" << endl;
+    sleep(1);
 
     
+    manageGroupThread1.join();
+    manageGroupThread2.join();
+    
+    cout << "hi3" << endl;
+    cout << "hi4" << endl;
+    cout << "hi5" << endl;
+    cout << "hi6" << endl;
+
+    finishProgram = true;
+    for(int i=0;i<noRouters;i++)
+        IGMP_thread[i].join();
+}
+
+
+void manageGroup(int noRouters, int centre, std::vector<std::vector<int>> graphRouter,std::vector<router*> routerVector, string fileToBeSend)
+{
 
     map<int,vector<int>> unicastPath;
 
 
-    int centre = 0;
     //path is stored in reverse fashion i.e. from centre node to host node
     unicastPath = findUnicastPath(noRouters, centre, graphRouter);
 
@@ -363,49 +404,42 @@ int main()
     thread genFutSpanTreeThread(generateFutureSpanningTree, ref(spanningTree), noRouters, centre, unicastPath, routerVector);
     genFutSpanTreeThread.detach();
 
-    bool finishProgram = false;
-    thread IGMP_thread[noRouters];
-    for(int i=0;i<noRouters;i++)
-    {
-        std::cout << "Calling for router " << routerVector[i]->routerID << std::endl;
-        IGMP_thread[i] = std::thread(hostIGMPfunc, routerVector[i], &finishProgram);
-    }
-    sleep(1);
-    
     std::ifstream fp;
-    fp.open("temp1.mp3", ios::binary|ios::in);
+    fp.open(fileToBeSend, ios::binary|ios::in);
     int packNo=0;
     bool islastPacket = false;
     while(fp.eof() == false)
     {
-        // if(packNo == 150)
-        // {
-        //     spanningTree[1][3] = 0;
-        //     spanningTree[3][1] = 0;
-        // }
+        cout << "centre :" << centre << " packNo : " << packNo << endl; 
         // if(packNo == 450)
         // {
         //     spanningTree[1][3] = 1;
         //     spanningTree[3][1] = 1;
         // }
-        char sendBuffer[SIZE];
-        fp.read(sendBuffer, SIZE);
+        char sendBuffer1[SIZE];
+        fp.read(sendBuffer1, SIZE);
+        char sendBuffer[SIZE+1];
+        if(centre == 0)
+            sendBuffer[0]='0';
+        else
+            sendBuffer[0]='6';
+        
+        for(int i=1;i<SIZE+1;i++)
+            sendBuffer[i]=sendBuffer1[i-1];
         // if(packNo == 0)
         //     cout << "Sending :" << sendBuffer << endl;
         if(fp.eof() == true)
             islastPacket = true;
-        sendingMulticastPackets(noRouters, spanningTree, routerVector, sendBuffer,sizeof(sendBuffer), packNo, islastPacket);
+        sendingMulticastPackets(centre, noRouters, spanningTree, routerVector, sendBuffer,sizeof(sendBuffer), packNo, islastPacket);
         // std::thread sendingTo(sendPack, routerVector[0], 1, sendBuffer, sizeof(sendBuffer),packNo);
         // std::thread recevingFrom(recPack, routerVector[1], 0, packNo, islastPacket);
         // sendingTo.join();
         // recevingFrom.join();
 
         packNo++;
-        //std::cout << packNo << " sending " << sizeof(sendBuffer) << std::endl;
-        
+        //std::cout << packNo << " sending " << sizeof(sendBuffer) << std::endl; 
     }
-
-    finishProgram = true;
-    for(int i=0;i<noRouters;i++)
-        IGMP_thread[i].join();
+    finisher++;
+    while(finisher != 2){}
+    cout << "finished sending " << fileToBeSend << endl;
 }

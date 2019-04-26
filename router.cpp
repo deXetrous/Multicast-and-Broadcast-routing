@@ -5,7 +5,8 @@ router::router(int pNo, int maxcon)
     portNo = pNo;
     portNoIGMP = portNo+1;
     max_conn = maxcon;
-    toBeShown = true;
+    toBeShown0 = true;
+    toBeShown6 = true;
 }
 
 void error(const char* msg)
@@ -14,7 +15,7 @@ void error(const char* msg)
 	exit(1);
 }
 
-void manageHost(int routerID, int* toBeShown, int socketHostID,  bool *finishProgram)
+void manageHost(int routerID, int* toBeShown0, int* toBeShown6, int socketHostID,  bool *finishProgram)
 {
     
     while(*finishProgram == false)
@@ -29,24 +30,30 @@ void manageHost(int routerID, int* toBeShown, int socketHostID,  bool *finishPro
         std::string s(rcvBuf);
 
         if(s.find("1") == std::string::npos)
-            *toBeShown = false;
+            *toBeShown0 = false;
         else
-            *toBeShown = true;
+            *toBeShown0 = true;
+
+        if(s.find("2") == std::string::npos)
+            *toBeShown6 = false;
+        else
+            *toBeShown6 = true;
         
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     }
+    std::cout << "here" << std::endl;
 }
 
 void router::hostIGMPCommunication(bool *finishProgram)
 {
     std::thread thForHost[max_conn];
     for(int i=0;i<max_conn;i++)
-        thForHost[i] = std::thread(manageHost, routerID, &toBeShown, hostSockIDIGMP[i], finishProgram);
+        thForHost[i] = std::thread(manageHost, routerID, &toBeShown0, &toBeShown6, hostSockIDIGMP[i], finishProgram);
 
     for(int i=0;i<max_conn;i++)
         thForHost[i].join();
 }
-
+using namespace std;
 void router::sendDataToRouter(int index, char *sendBuffer, int packNo, int sizeBuffer)
 {
     // char rcvBuf[SIZE];
@@ -58,20 +65,33 @@ void router::sendDataToRouter(int index, char *sendBuffer, int packNo, int sizeB
 
     // if(packNo == 0)
     // std::cout << "SEnding reallY : " <<sizeof(sendBuffer) << " " << sizeBuffer<< " " << sendBuffer << std::endl;
+    //cout << "----------" << sizeBuffer << strlen(sendBuffer) << sizeof(sendBuffer) << endl;
     send(routerSockID[index], sendBuffer, sizeBuffer, 0);
     //std::cout << "Message Sending " << std::endl;
 
 }
-using namespace std;
+
 void router::recvDataFromRouter(int index, int packNo, bool islastPacket)
 {
-    char rcvBuf[SIZE];
-    bzero(rcvBuf,SIZE);
+    char rcvBuf[SIZE+1];
+    bzero(rcvBuf,SIZE+1);
     if(recv(routerSockID[index], rcvBuf, sizeof(rcvBuf), 0) < 0)
             error("Received Failed");
-    
-    if(toBeShown == true)
+    //cout << "========"  << strlen(rcvBuf) << sizeof(rcvBuf) << endl;
+    if(rcvBuf[0] == '0' && toBeShown0 == true)
+    {
+        cout << "Forwarding for 0" << endl;
+        // if(islastPacket == true)
+        //     rcvBuf[0] = '9';
         send(hostSockID[0], rcvBuf, sizeof(rcvBuf),0);
+    }
+    else if(rcvBuf[0] == '6' && toBeShown6 == true)
+    {
+        // if(islastPacket == true)
+        //     rcvBuf[0] = '8';
+        cout << "Forwarding for 6" << endl;
+        send(hostSockID[0], rcvBuf, sizeof(rcvBuf),0);
+    }
     //std::cout << "Message received routerID " << routerID << " " << packNo << " " << sizeof(rcvBuf) << std::endl;
     
     // if(packNo % 10 == 0)

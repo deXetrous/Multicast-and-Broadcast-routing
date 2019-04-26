@@ -77,11 +77,13 @@ void routerCommunication(int sockIGMP, int myID)
         }
     }
 }
-int app;
-int sharedIndex = 0;
-int totalToPlay = INT_MAX;
+int app; //this represent app0
+int app6;
 
-void play(int myID)
+int totalToPlay0 = INT_MAX;
+int totalToPlay6 = INT_MAX;
+
+void play0(int myID, char idGroup)
 {
 
     int x = 0;
@@ -91,7 +93,7 @@ void play(int myID)
         if(app-1 > 5)
         {
             
-            cout << x << " " << app-1 << " " << totalToPlay <<endl;
+            cout << x << " " << app-1 << " " << totalToPlay0 <<endl;
 
             cout << "opening file " << x << endl;
             string fileName = "mpg123";
@@ -99,11 +101,11 @@ void play(int myID)
             cout << app-1 << " " << x+10 <<endl;
             usleep(100);
             int mini = min(app-1,x+10);
-            if(x >= totalToPlay)
+            if(x >= totalToPlay0)
                 break;
             for(int i=x;i<=mini;i++)
             {
-                fileName += " "+to_string(myID)+"/"+to_string(i)+"demo.mp3";
+                fileName += " "+to_string(myID)+"/"+ idGroup + "/" + to_string(i)+"demo.mp3";
 
             }
             if(mini - x > 2)
@@ -113,7 +115,47 @@ void play(int myID)
                 x=mini+1;
             }
 
-            if(mini == totalToPlay)
+            if(mini == totalToPlay0)
+                break;
+            
+        }
+
+    }
+
+}
+void play6(int myID, char idGroup)
+{
+
+    int x = 0;
+    cout << "hi" <<endl;
+    while(true)
+    {
+        if(app6-1 > 5)
+        {
+            
+            cout << x << " " << app6-1 << " " << totalToPlay6 <<endl;
+
+            cout << "opening file " << x << endl;
+            string fileName = "mpg123";
+
+            cout << app6-1 << " " << x+10 <<endl;
+            usleep(100);
+            int mini = min(app6-1,x+10);
+            if(x >= totalToPlay6)
+                break;
+            for(int i=x;i<=mini;i++)
+            {
+                fileName += " "+to_string(myID)+"/"+ idGroup + "/" + to_string(i)+"demo.mp3";
+
+            }
+            if(mini - x > 2)
+            {
+                system(fileName.c_str());
+                cout << "played from " << x << " to " << mini <<endl;
+                x=mini+1;
+            }
+
+            if(mini == totalToPlay6)
                 break;
             
         }
@@ -141,62 +183,111 @@ int main()
     igmpTH.detach();
     
     fstream fp;
+    fstream fp1;
     // fp.open("song.mp3", ios::binary | ios::out);
     int x=0;
+    char groupID;
+    char recvbuffer1[SIZE+1];
     char recvbuffer[SIZE];
     thread th[1];
     if(myID == 3)
-        th[0] = thread(play,myID);
+        th[0] = thread(play6,myID, '6');
     //th[0].detach();
     
     app = 0;
-
-    while(true)
+    app6 = 0;
+    int sharedIndex0 = 0;
+    int sharedIndex6 = 0;
+    bool end0 = false, end6 = false;
+    int countEnd = 0;
+    while((end0 == false || end6 == false)&&countEnd<3)
     {
-
         bzero(recvbuffer,SIZE);
-        int n = recv(H->sockid, recvbuffer, sizeof(recvbuffer), 0);
-        
-       
-        //cout << x++ << " received " << sizeof(recvbuffer) << " " << n<< endl;
-
+        bzero(recvbuffer1,SIZE+1);
+        int n = recv(H->sockid, recvbuffer1, sizeof(recvbuffer1), 0);
+        for(int i=0;i<SIZE;i++)
+            recvbuffer[i] = recvbuffer1[i+1]; 
+        groupID = recvbuffer1[0];
+        cout << " -- " << groupID << " received -- " << n << " end0 : "<< end0 << " end6: " << end6 << endl;
         if(n==0)
         {
-            totalToPlay = app-1;
-            break;
+            cout << "Terminator received : " << groupID << endl;
+            countEnd++;
+            totalToPlay0 = app-1;
+            totalToPlay6 = app6-1;
+            // if(groupID == '0')
+            // {
+            //     cout << "in-------------" << endl;
+            //     totalToPlay0 = app-1;
+            //     end0 = true;
+            // }
+            // else if(groupID == '6')
+            // {
+            //     cout << "in-------------" << endl;
+            //     totalToPlay6 = app6-1;
+            //     end6 = true;    
+            // }
+            continue;
         }
 
-        if(sharedIndex % 10 == 0)
+        if(groupID == '0')
         {
 
+            if(sharedIndex0 % 10 == 0)
+            {
+                string fileName = "demo.mp3";
 
-            string fileName = "demo.mp3";
+                fileName = to_string(myID) + "/" + groupID + "/" + to_string(app)+fileName; 
+                
+                //cout << fileName << endl;
+                fp.open(fileName, ios::binary | ios::out);
+                app++;
+                
+                
+            }
+            for(int i=0;i<sizeof(recvbuffer);i++)
+                fp << recvbuffer[i];
 
-            fileName = to_string(myID) + "/" + to_string(app)+fileName; 
-            
-            
-            fp.open(fileName, ios::binary | ios::out);
-            app++;
-            
-            
+            if(sharedIndex0%10 == 9)
+            {
+                cout << "written file " << app-1 << endl;
+                fp.close();
+                    
+            }
+            sharedIndex0++;
         }
-        for(int i=0;i<sizeof(recvbuffer);i++)
-            fp << recvbuffer[i];
-
-        if(sharedIndex%10 == 9)
+        else if(groupID == '6')
         {
-            cout << "written file " << app-1 << endl;
-            fp.close();
-            
-            
-            
-        }
+            if(sharedIndex6 % 10 == 0)
+            {
+                string fileName = "demo.mp3";
 
-        sharedIndex++;
+                fileName = to_string(myID) + "/" + groupID + "/" + to_string(app6)+fileName; 
+                
+                //cout << fileName << endl;
+                fp1.open(fileName, ios::binary | ios::out);
+                app6++;
+                
+                
+            }
+            for(int i=0;i<sizeof(recvbuffer);i++)
+                fp1 << recvbuffer[i];
+
+            if(sharedIndex6%10 == 9)
+            {
+                cout << "written file " << app6-1 << endl;
+                fp1.close();
+                
+                
+                
+            }
+            sharedIndex6++;
+        }
     }
     if(myID == 3)
         th[0].join();
     fp.close();
+    fp1.close();
 
 
 
