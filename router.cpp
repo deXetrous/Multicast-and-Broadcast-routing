@@ -56,19 +56,7 @@ void router::hostIGMPCommunication(bool *finishProgram)
 using namespace std;
 void router::sendDataToRouter(int index, char *sendBuffer, int packNo, int sizeBuffer)
 {
-    // char rcvBuf[SIZE];
-    // if(recv(newsockid, rcvBuf, sizeof(rcvBuf), 0) < 0)
-    //         error("Received Failed");
-    // std::cout << "Message received " << rcvBuf << std::endl;
-    
-    //char msg[] = "Sending mssg..Hello123\n";
-
-    // if(packNo == 0)
-    // std::cout << "SEnding reallY : " <<sizeof(sendBuffer) << " " << sizeBuffer<< " " << sendBuffer << std::endl;
-    //cout << "----------" << sizeBuffer << strlen(sendBuffer) << sizeof(sendBuffer) << endl;
     send(routerSockID[index], sendBuffer, sizeBuffer, 0);
-    //std::cout << "Message Sending " << std::endl;
-
 }
 
 void router::recvDataFromRouter(int index, int packNo, bool islastPacket)
@@ -80,7 +68,7 @@ void router::recvDataFromRouter(int index, int packNo, bool islastPacket)
     //cout << "========"  << strlen(rcvBuf) << sizeof(rcvBuf) << endl;
     if(rcvBuf[0] == '0' && toBeShown0 == true)
     {
-        cout << "Forwarding for 0" << endl;
+        //cout << "Forwarding for 0" << endl;
         // if(islastPacket == true)
         //     rcvBuf[0] = '9';
         send(hostSockID[0], rcvBuf, sizeof(rcvBuf),0);
@@ -89,26 +77,9 @@ void router::recvDataFromRouter(int index, int packNo, bool islastPacket)
     {
         // if(islastPacket == true)
         //     rcvBuf[0] = '8';
-        cout << "Forwarding for 6" << endl;
+        //cout << "Forwarding for 6" << endl;
         send(hostSockID[0], rcvBuf, sizeof(rcvBuf),0);
     }
-    //std::cout << "Message received routerID " << routerID << " " << packNo << " " << sizeof(rcvBuf) << std::endl;
-    
-    // if(packNo % 10 == 0)
-    // {
-    //     std::string fileName = std::to_string(routerID) + "/";
-    //     fileName += std::to_string(packNo/10)+ "demo.mp3";  
-    //     fpToWrite.open(fileName, std::ios::binary | std::ios::out);
-        
-    // }
-    // for(int i=0;i<sizeof(rcvBuf);i++)
-    //     fpToWrite << rcvBuf[i];
-    // if(packNo%10 == 9)
-    // {
-    //     fpToWrite.close();
-    // }
-    // if(islastPacket)
-    //     fpToWrite.close();
 }
 
 void router::joinConn(int pNo, int i)
@@ -120,16 +91,11 @@ void router::joinConn(int pNo, int i)
 	addrport.sin_family = AF_INET;
 	addrport.sin_port = htons(pNo);
 
-	addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
+	//addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
+    addrport.sin_addr.s_addr = htons(INADDR_ANY);
     if(connect(newsockid, (struct sockaddr*)&addrport, sizeof(addrport)) < 0 )
         error("error in connect");
     std::cout << "successfully connected to previous router " << newsockid << std::endl;
-    // char rcvBuf[SIZE];
-    // if(recv(newsockid, rcvBuf, sizeof(rcvBuf), 0) < 0)
-    //         error("Received Failed");
-    // std::cout << "Message received " << rcvBuf << std::endl;
-    // char msg[] = "Replying back..fuck off\n";
-    //     send(newsockid, msg, sizeof(msg), 0);
 
 }
 
@@ -142,14 +108,7 @@ void router::listenConn(int j)
     routerSockID[j] = accept(sockid, (struct sockaddr*)&clientAddr, &clilen);
 
     std::cout << "Successfully connected " << routerSockID[j] <<std::endl;
-    // char msg[] = "I received your connection..Reply me back";
-    //     send(routerSockID, msg, sizeof(msg), 0);
-    // std::cout << "hi " << routerSockID << std::endl;
-    // char rcvBuf[SIZE];
-    // if(recv(routerSockID, rcvBuf, sizeof(rcvBuf), 0) < 0)
-    //         error("Receiving Failed");
-    // std::cout << "Received this : " << rcvBuf << std::endl;
-
+    
 }
 
 void router::setSocketAcceptConnections()
@@ -161,8 +120,8 @@ void router::setSocketAcceptConnections()
 
 	addrport.sin_family = AF_INET;
 	addrport.sin_port = htons(portNo);
-    addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
-	//addrport.sin_addr.s_addr = htonl(INADDR_ANY);
+    //addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
+	addrport.sin_addr.s_addr = htons(INADDR_ANY);
 	if(bind(sockid, (struct sockaddr *) &addrport, sizeof(addrport)) < 0)
         error("Binding failed");
     
@@ -188,8 +147,8 @@ void router::setSocketAcceptConnectionsIGMP()
 
 	addrport.sin_family = AF_INET;
 	addrport.sin_port = htons(portNoIGMP);
-    addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
-	//addrport.sin_addr.s_addr = htonl(INADDR_ANY);
+    //addrport.sin_addr.s_addr = inet_addr("127.0.0.1");
+	addrport.sin_addr.s_addr = htons(INADDR_ANY);
 	if(bind(sockidIGMP, (struct sockaddr *) &addrport, sizeof(addrport)) < 0)
         error("Binding failed");
     

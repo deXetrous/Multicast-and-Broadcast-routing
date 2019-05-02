@@ -1,0 +1,59 @@
+cd 0/0/
+rm *.mp3
+cd ..
+cd 6/
+rm *.mp3
+cd ..
+cd ..
+
+cd 1/0/
+rm *.mp3
+cd ..
+cd 6/
+rm *.mp3
+cd ..
+cd ..
+
+
+cd 2/0/
+rm *.mp3
+cd ..
+cd 6/
+rm *.mp3
+cd ..
+cd ..
+
+
+cd 3/0/
+rm *.mp3
+cd ..
+cd 6/
+rm *.mp3
+cd ..
+cd ..
+
+
+cd 4/0/
+rm *.mp3
+cd ..
+cd 6/
+rm *.mp3
+cd ..
+cd ..
+
+
+cd 5/0/
+rm *.mp3
+cd ..
+cd 6/
+rm *.mp3
+cd ..
+cd ..
+
+cd 6/0/
+rm *.mp3
+cd ..
+cd 6/
+rm *.mp3
+cd ..
+cd ..

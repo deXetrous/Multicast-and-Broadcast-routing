@@ -93,7 +93,7 @@ void play0(int myID, char idGroup)
         if(app-1 > 5)
         {
             
-            cout << x << " " << app-1 << " " << totalToPlay0 <<endl;
+            //cout << x << " " << app-1 << " " << totalToPlay0 <<endl;
 
             cout << "opening file " << x << endl;
             string fileName = "mpg123";
@@ -208,10 +208,10 @@ int main()
         for(int i=0;i<SIZE;i++)
             recvbuffer[i] = recvbuffer1[i+1]; 
         groupID = recvbuffer1[0];
-        cout << " -- " << groupID << " received -- " << n << " end0 : "<< end0 << " end6: " << end6 << endl;
+        //cout << " -- " << groupID << " received -- " << n << " end0 : "<< end0 << " end6: " << end6 << endl;
         if(n==0)
         {
-            cout << "Terminator received : " << groupID << endl;
+            //cout << "Terminator received : " << groupID << endl;
             countEnd++;
             totalToPlay0 = app-1;
             totalToPlay6 = app6-1;
